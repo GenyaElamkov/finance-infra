@@ -1,0 +1,112 @@
+name: pocketkeeper
+
+# Раскладка на сервере (три репозитория рядом):
+#
+#   /opt/pocketkeeper/
+#   ├── backend/   <- git clone PocketKeeper (бэкенд-репозиторий)
+#   ├── frontend/  <- git clone finance-frontend (фронтенд-репозиторий)
+#   └── infra/     <- этот репозиторий, команды запускаются отсюда
+#
+# Наружу торчит только nginx (80/443). backend и frontend доступны
+# только из внутренней docker-сети edge_net, наружу порты не публикуются.
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: pocketkeeper_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_net
+
+  # Одноразовый прогон миграций перед стартом backend.
+  # Использует тот же production-образ backend'а, что и сам сервис app.
+  migrate:
+    build:
+      context: ../backend
+      target: production
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend_net
+
+  backend:
+    build:
+      context: ../backend
+      target: production
+    container_name: pocketkeeper_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+    volumes:
+      - ./data/logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - backend_net # доступ к db
+      - edge_net # доступ от nginx
+
+  frontend:
+    build:
+      context: ../frontend
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
+    container_name: pocketkeeper_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - edge_net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: pocketkeeper_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - edge_net
+
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  # db видят только backend и migrate — ни frontend, ни nginx доступа к БД не имеют
+  backend_net:
+    driver: bridge
+  # сюда смотрит nginx: backend (api) и frontend (статика)
+  edge_net:
+    driver: bridge

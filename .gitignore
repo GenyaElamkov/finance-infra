@@ -1,0 +1,13 @@
+# Секреты
+.env
+
+# Логи backend (bind mount)
+data/logs/*
+!data/logs/.gitkeep
+
+# Сертификаты Let's Encrypt
+nginx/certbot/conf/
+nginx/certbot/www/
+
+# OS
+.DS_Store
