@@ -10,15 +10,10 @@
 
 ```
 /opt/pocketkeeper/
-├── backend/    <- git clone <backend-repo>   (PocketKeeper)
-├── frontend/   <- git clone <frontend-repo>  (finance-frontend)
-└── infra/      <- git clone <этот репозиторий>, команды запускаются отсюда
+├── backend/    <- git clone https://github.com/GenyaElamkov/PocketKeeper.git
+├── frontend/   <- git clone https://github.com/GenyaElamkov/finance-frontend.git
+└── infra/      <- git clone https://github.com/GenyaElamkov/finance-infra.git
 ```
-
-Файлы `Dockerfile` и `nginx.conf` из `frontend-repo-additions/` нужно закоммитить
-в корень репозитория `finance-frontend` (там сейчас есть только dev-докерфайл).
-В backend-репозитории (`PocketKeeper`) менять ничего не нужно — там уже есть
-рабочий production `Dockerfile`.
 
 ## Архитектура
 
