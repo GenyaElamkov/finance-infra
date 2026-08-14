@@ -35,7 +35,7 @@ services:
   # Использует тот же production-образ backend'а, что и сам сервис app.
   migrate:
     build:
-      context: ../backend
+      context: ../PocketKeeper
       target: production
     env_file:
       - .env
@@ -50,7 +50,7 @@ services:
 
   backend:
     build:
-      context: ../backend
+      context: ../PocketKeeper
       target: production
     container_name: pocketkeeper_backend
     restart: unless-stopped
@@ -71,7 +71,7 @@ services:
 
   frontend:
     build:
-      context: ../frontend
+      context: ../finance-frontend
       target: production
       args:
         VITE_API_URL: ${VITE_API_URL:-/api/v1}
