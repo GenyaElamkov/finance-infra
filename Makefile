@@ -38,11 +38,13 @@ certbot-init: ## Первичный выпуск сертификата Let's En
 		-v $$(pwd)/nginx/certbot/conf:/etc/letsencrypt \
 		-v $$(pwd)/nginx/certbot/www:/var/www/certbot \
 		certbot/certbot certonly --webroot -w /var/www/certbot \
-		-d $$(grep DOMAIN .env | cut -d '=' -f2)
-
+		-d $$(grep DOMAIN .env | cut -d '=' -f2) \
+		-m $$(grep CERTBOT_EMAIL .env | cut -d '=' -f2) \
+		--agree-tos --no-eff-email --non-interactive
+ 
 certbot-renew: ## Продление сертификата (повесить на cron раз в сутки/неделю)
 	docker run --rm \
 		-v $$(pwd)/nginx/certbot/conf:/etc/letsencrypt \
 		-v $$(pwd)/nginx/certbot/www:/var/www/certbot \
-		certbot/certbot renew --webroot -w /var/www/certbot
+		certbot/certbot renew --webroot -w /var/www/certbot --non-interactive
 	$(COMPOSE) exec nginx nginx -s reload
