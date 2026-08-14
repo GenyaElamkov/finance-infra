@@ -1,6 +1,6 @@
 # Секреты
 .env
-/nginx/conf.d/.pocketkeeper.conf
+/nginx/conf.d/pocketkeeper.conf
 
 # Логи backend (bind mount)
 data/logs/*
